@@ -1,0 +1,79 @@
+import pandas as pd
+import os
+
+# Put filepath to variable for easier access like in example 
+iowa_file_path = os.path.abspath("C:/Users/mr949/OneDrive/Pulpit/Python/train.csv")
+
+# read the data and store data in DataFrame titled melbourne_data
+iowa_data = pd.read_csv(iowa_file_path) 
+
+# print a summary of the data in Melbourne data
+iowa_data.describe()
+
+#To choose columns on which will prediction will be made
+iowa_data.columns 
+
+y = iowa_data.SalePrice
+iowa_features = ["LotArea", "YearBuilt", "1stFlrSF", "2ndFlrSF", "FullBath", "BedroomAbvGr", "TotRmsAbvGrd"]
+x = iowa_data[iowa_features]
+x.describe()
+x.head()
+
+
+from sklearn.tree import DecisionTreeRegressor
+
+# Define model
+iowa_model = DecisionTreeRegressor(random_state=1)
+
+# Fit model
+iowa_model.fit(x, y)
+
+print("Making predictions for the following 5 houses:")
+print(x.head())
+print("The predictions are")
+print(iowa_model.predict(x.head()))
+
+from sklearn.metrics import mean_absolute_error
+
+# Mae value
+predicted_home_prices = iowa_model.predict(x)
+mean_absolute_error(y, predicted_home_prices)
+
+from sklearn.model_selection import train_test_split
+
+train_x, val_x, train_y, val_y = train_test_split(x, y, random_state = 1)
+# Define model
+iowa_model = DecisionTreeRegressor()
+# Fit model
+iowa_model.fit(train_x, train_y)
+
+# get predicted prices on validation data
+val_predictions = iowa_model.predict(val_x)
+print(mean_absolute_error(val_y, val_predictions))
+
+candidate_max_leaf_nodes = [5, 25, 50, 100, 250, 500]
+# Loop to find the ideal tree size from candidate_max_leaf_nodes
+for max_leaf_nodes in candidate_max_leaf_nodes:
+    my_mae = get_mae(max_leaf_nodes, train_x, val_x, train_y, val_y)
+    print("Max leaf nodes: %d  \t\t Mean Absolute Error:  %d" %(max_leaf_nodes, my_mae))
+
+# Store the best value of max_leaf_nodes
+scores = {leaf_size: get_mae(leaf_size, train_x, val_x, train_y, val_y) for leaf_size in candidate_max_leaf_nodes}
+print("\n",scores)
+
+best_tree_size = min(scores, key=scores.get)
+
+print("\n", "Best tree size:", best_tree_size, scores[best_tree_size])
+
+final_model = DecisionTreeRegressor(max_leaf_nodes = best_tree_size, random_state=0)
+
+final_model.fit(x, y)
+
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import mean_absolute_error
+
+rf_model = RandomForestRegressor(random_state=1)
+rf_model.fit(train_x, train_y)
+melb_preds = rf_model.predict(val_x)
+rf_val_mae = mean_absolute_error(val_y, melb_preds)
+print("Validation MAE for Random Forest Model: {}".format(rf_val_mae))
